@@ -1,0 +1,358 @@
+<title>주한·서한 시간표</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: 지금 상태 카드 두 장(아이별 색) → 알림 설정 → 오늘 타임라인 / 주간표 탭 */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --line:#dde2ea; --fg:#1c2330; --muted:#647083;
+  --ju:#2f62c4; --ju-soft:#e3ebfa; --se:#e2731f; --se-soft:#fcebdd;
+  --ok:#2c8a5a; --warn:#b5462b;
+  --display:"Gowun Dodum","IBM Plex Sans KR",system-ui,sans-serif;
+  --body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12161d; --surface:#1b212b; --line:#2b3340; --fg:#e8ecf2; --muted:#98a3b5;
+  --ju:#7ea4ee; --ju-soft:#1f2c47; --se:#f2a065; --se-soft:#3a2a1d; --ok:#5cc28d; --warn:#ef8a70; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161d; --surface:#1b212b; --line:#2b3340; --fg:#e8ecf2; --muted:#98a3b5;
+  --ju:#7ea4ee; --ju-soft:#1f2c47; --se:#f2a065; --se-soft:#3a2a1d; --ok:#5cc28d; --warn:#ef8a70; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:960px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px}
+h1{font-family:var(--display);font-weight:400;font-size:1.6rem;margin:0;text-wrap:balance}
+.clock{font-variant-numeric:tabular-nums;font-size:2rem;font-weight:700;letter-spacing:.01em}
+.date{color:var(--muted)}
+.now{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.kid{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0;border-top:6px solid var(--c)}
+.kid.ju{--c:var(--ju);--soft:var(--ju-soft)} .kid.se{--c:var(--se);--soft:var(--se-soft)}
+.kid-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.kid-name{font-family:var(--display);font-size:1.3rem;color:var(--c)}
+.chip{font-size:.75rem;letter-spacing:.04em;padding:2px 10px;border-radius:999px;background:var(--soft);color:var(--c);font-weight:500;white-space:nowrap}
+.cur-label{font-size:.75rem;color:var(--muted);letter-spacing:.06em}
+.cur-name{font-size:1.7rem;font-weight:700;line-height:1.25;text-wrap:balance}
+.cur-time{color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:8px;border-radius:99px;background:var(--soft);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--c);border-radius:99px;transition:width .6s}
+.left{font-variant-numeric:tabular-nums;font-size:.9rem}
+.next{border-top:1px dashed var(--line);padding-top:10px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.next b{font-weight:500}
+.est{font-size:.7rem;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 5px;margin-left:4px;vertical-align:2px}
+section.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+h2{font-family:var(--display);font-weight:400;font-size:1.15rem;margin:0 0 12px}
+.alerts{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.alerts label{display:flex;align-items:center;gap:6px;cursor:pointer}
+button,select{font:inherit;color:inherit}
+.btn{background:var(--fg);color:var(--bg);border:0;border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:500}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ju);outline-offset:2px}
+select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:5px 8px}
+.hint{color:var(--muted);font-size:.85rem;margin:10px 0 0}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 14px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.days{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.day{border:1px solid var(--line);background:transparent;border-radius:8px;width:2.4rem;padding:4px 0;cursor:pointer}
+.day[aria-selected="true"]{border-color:var(--fg);font-weight:700}
+.day.today{text-decoration:underline;text-underline-offset:3px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.col h3{margin:0 0 8px;font-family:var(--display);font-weight:400;font-size:1.05rem}
+.col.ju h3{color:var(--ju)} .col.se h3{color:var(--se)}
+.col.ju{--c:var(--ju);--soft:var(--ju-soft)} .col.se{--c:var(--se);--soft:var(--se-soft)}
+ol.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+ol.tl li{display:grid;grid-template-columns:7.2rem 1fr;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);align-items:center}
+ol.tl li .t{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.9rem}
+ol.tl li.past{opacity:.5}
+ol.tl li.cur{background:var(--soft);border-color:var(--c)}
+ol.tl li.cur .t{color:var(--c);font-weight:700}
+.empty{color:var(--muted);padding:8px 0}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:.85rem}
+th,td{border:1px solid var(--line);padding:6px;vertical-align:top;text-align:center}
+th{font-weight:500}
+td.kid-cell{font-family:var(--display);font-size:1rem}
+tr.ju td.kid-cell{color:var(--ju);background:var(--ju-soft)} tr.se td.kid-cell{color:var(--se);background:var(--se-soft)}
+td .it{display:block;padding:3px 0}
+td .it small{display:block;color:var(--muted);font-variant-numeric:tabular-nums}
+th.today-col{background:var(--fg);color:var(--bg)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:12px 18px;border-radius:12px;max-width:min(92vw,460px);box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:20}
+@media (prefers-reduced-motion:reduce){.bar>i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>주한·서한 지금 뭐 하나?</h1>
+      <div class="date" id="date"></div>
+    </div>
+    <div class="clock" id="clock">--:--</div>
+  </header>
+
+  <div class="now" id="now"></div>
+
+  <section class="panel" aria-labelledby="alert-h">
+    <h2 id="alert-h">알림</h2>
+    <div class="alerts">
+      <button class="btn" id="alert-btn" type="button">알림 켜기</button>
+      <label for="lead">시작
+        <select id="lead">
+          <option value="5">5분</option><option value="10" selected>10분</option>
+          <option value="15">15분</option><option value="30">30분</option>
+        </select> 전에 알림</label>
+      <label><input type="checkbox" id="n-ju" checked> 주한</label>
+      <label><input type="checkbox" id="n-se" checked> 서한</label>
+      <label><input type="checkbox" id="n-sound" checked> 소리</label>
+      <button class="btn ghost" id="test-btn" type="button">테스트</button>
+    </div>
+    <p class="hint" id="alert-hint">일정 시작 전과 시작할 때, 하교할 때 알려 줍니다. 이 화면이 열려 있어야 알림이 옵니다.</p>
+  </section>
+
+  <section class="panel">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-day" aria-selected="true" type="button">하루 일정</button>
+      <button class="tab" role="tab" id="tab-week" aria-selected="false" type="button">주간 시간표</button>
+    </div>
+    <div id="view-day">
+      <div class="days" id="days"></div>
+      <div class="cols" id="cols"></div>
+    </div>
+    <div id="view-week" hidden><div class="tbl-wrap" id="week"></div></div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+// ───────── 시간표 데이터 (요일: 0=일 … 6=토) ─────────
+// type: school 학교 · study 공부/학원 · sport 운동 · music 음악 · church 성당 · meal 저녁
+// est:true 는 원본 시간표에 시간이 없어 추정한 칸 (🍚♬)
+const SCHOOL_START = "08:40";
+const S = (end, label) => ({ s: SCHOOL_START, e: end, name: "학교", type: "school", note: label });
+const MEAL = (s, e) => ({ s, e, name: "저녁 · 악기연습", type: "meal", est: true });
+
+const KIDS = [
+  { id: "ju", name: "주한", week: {
+    1: [S("14:20","6교시 하교"), {s:"15:50",e:"18:30",name:"파인만 수학",type:"study"}, MEAL("18:30","20:00"), {s:"20:00",e:"21:00",name:"줄넘기",type:"sport"}],
+    2: [S("14:20","6교시 하교"), {s:"15:30",e:"17:45",name:"현잉글리시",type:"study"}, MEAL("17:45","19:30"), {s:"19:30",e:"20:20",name:"검도",type:"sport"}],
+    3: [S("13:30","5교시 하교"), {s:"16:00",e:"18:30",name:"수학 클리닉",type:"study"}, MEAL("18:30","20:00"), {s:"20:00",e:"21:00",name:"줄넘기",type:"sport"}],
+    4: [S("14:20","6교시 하교"), {s:"15:30",e:"17:45",name:"현잉글리시",type:"study"}, {s:"18:20",e:"19:20",name:"바이올린",type:"music"}, {s:"19:30",e:"20:20",name:"검도",type:"sport"}],
+    5: [S("14:20","6교시 하교"), {s:"15:50",e:"18:30",name:"파인만 수학",type:"study"}, MEAL("18:30","19:30"), {s:"19:30",e:"20:20",name:"검도",type:"sport"}],
+    6: [{s:"10:00",e:"11:00",name:"펜싱",type:"sport"}, {s:"11:00",e:"12:00",name:"수영",type:"sport"}, {s:"14:00",e:"17:00",name:"성당",type:"church"}],
+    0: [{s:"14:00",e:"15:40",name:"컴퓨터",type:"study"}],
+  }},
+  { id: "se", name: "서한", week: {
+    1: [S("13:30","5교시 하교"), {s:"14:00",e:"15:30",name:"생각의숲",type:"study"}, {s:"19:30",e:"20:20",name:"검도",type:"sport"}],
+    2: [S("14:20","6교시 하교"), {s:"15:20",e:"19:20",name:"황소수학",type:"study"}],
+    3: [S("13:30","5교시 하교"), {s:"13:40",e:"15:00",name:"컴퓨터 방과후",type:"study"}, {s:"15:30",e:"17:00",name:"생각숲",type:"study"}, {s:"18:10",e:"18:50",name:"피아노",type:"music"}, {s:"19:30",e:"20:20",name:"검도",type:"sport"}],
+    4: [S("13:30","5교시 하교"), {s:"15:20",e:"19:20",name:"황소수학",type:"study"}],
+    5: [S("13:30","5교시 하교"), {s:"14:00",e:"15:30",name:"생각의숲",type:"study"}, {s:"16:30",e:"17:10",name:"피아노",type:"music"}, {s:"19:30",e:"20:20",name:"검도",type:"sport"}],
+    6: [{s:"14:00",e:"17:00",name:"성당",type:"church"}],
+    0: [],
+  }},
+];
+const TYPE_LABEL = { school:"학교", study:"공부", sport:"운동", music:"음악", church:"성당", meal:"저녁", free:"집", sleep:"쉬는 시간" };
+const DAY = ["일","월","화","수","목","금","토"];
+
+// ───────── 유틸 ─────────
+const toMin = t => { const [h,m] = t.split(":").map(Number); return h*60+m; };
+const fmt = m => { const h = Math.floor(m/60), mm = m%60; const ap = h < 12 ? "오전" : "오후"; const h12 = h%12 || 12; return `${ap} ${h12}:${String(mm).padStart(2,"0")}`; };
+const short = m => `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`;
+const dur = m => m >= 60 ? `${Math.floor(m/60)}시간${m%60 ? " "+(m%60)+"분" : ""}` : `${m}분`;
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+function itemsFor(kid, dow){ return (kid.week[dow] || []).map(x => ({...x, sm: toMin(x.s), em: toMin(x.e)})); }
+
+// 지금 상태: 일정 중 / 일정 사이(집) / 하루 끝
+function status(kid, date){
+  const dow = date.getDay(), now = date.getHours()*60 + date.getMinutes();
+  const list = itemsFor(kid, dow);
+  const cur = list.find(x => now >= x.sm && now < x.em);
+  const next = list.find(x => x.sm > now);
+  if (cur) return { cur, next, now };
+  const prev = [...list].reverse().find(x => x.em <= now);
+  let gap;
+  if (now < 7*60 || now >= 21*60+30) gap = { name: "잘 시간", type: "sleep" };
+  else if (!prev && next && next.type === "school") gap = { name: "등교 준비", type: "free" };
+  else if (prev && prev.type === "school" && next) gap = { name: "하교 후 · 집/이동", type: "free" };
+  else if (next) gap = { name: "집 · 자유시간", type: "free" };
+  else gap = { name: "오늘 일정 끝 · 집", type: "free" };
+  gap.sm = prev ? prev.em : null; gap.em = next ? next.sm : null; gap.gap = true;
+  return { cur: gap, next, now };
+}
+
+// ───────── 렌더: 지금 카드 ─────────
+function renderNow(d){
+  const el = document.getElementById("now");
+  el.innerHTML = KIDS.map(kid => {
+    const { cur, next, now } = status(kid, d);
+    let timeTxt = "", pct = null, leftTxt = "";
+    if (cur.sm != null && cur.em != null){
+      timeTxt = `${fmt(cur.sm)} – ${fmt(cur.em)}`;
+      pct = Math.max(0, Math.min(100, (now - cur.sm) / (cur.em - cur.sm) * 100));
+      leftTxt = `${dur(cur.em - now)} 남음`;
+    } else if (cur.em != null){ timeTxt = `${fmt(cur.em)}까지`; leftTxt = `${dur(cur.em - now)} 남음`; }
+    else if (cur.sm != null){ timeTxt = `${fmt(cur.sm)}부터`; }
+    const note = cur.note ? ` · ${cur.note} ${fmt(cur.em)}` : "";
+    return `<article class="kid ${kid.id}">
+      <div class="kid-head"><span class="kid-name">${kid.name}</span><span class="chip">${TYPE_LABEL[cur.type]}</span></div>
+      <div>
+        <div class="cur-label">지금</div>
+        <div class="cur-name">${cur.name}${cur.est ? '<span class="est">시간 추정</span>' : ""}</div>
+        <div class="cur-time">${timeTxt}${cur.note ? ` <span>(${cur.note})</span>` : ""}</div>
+      </div>
+      ${pct != null ? `<div class="bar" role="progressbar" aria-valuenow="${Math.round(pct)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>` : ""}
+      ${leftTxt ? `<div class="left">${leftTxt}</div>` : ""}
+      <div class="next">${next
+        ? `<span>다음 <b>${next.name}</b> · ${fmt(next.sm)}</span><span class="left">${dur(next.sm - now)} 후</span>`
+        : `<span class="cur-time">오늘 남은 일정 없음</span>`}</div>
+    </article>`;
+  }).join("");
+}
+
+// ───────── 렌더: 하루 일정 ─────────
+let selDay = new Date().getDay();
+function renderDays(d){
+  const today = d.getDay();
+  const order = [1,2,3,4,5,6,0];
+  document.getElementById("days").innerHTML = order.map(i =>
+    `<button type="button" class="day${i===today?" today":""}" aria-selected="${i===selDay}" data-d="${i}">${DAY[i]}</button>`).join("");
+}
+function renderCols(d){
+  const isToday = selDay === d.getDay(), now = d.getHours()*60 + d.getMinutes();
+  document.getElementById("cols").innerHTML = KIDS.map(kid => {
+    const list = itemsFor(kid, selDay);
+    const rows = list.length ? list.map(x => {
+      let cls = "";
+      if (isToday){ if (now >= x.em) cls = "past"; else if (now >= x.sm) cls = "cur"; }
+      const name = x.type === "school" ? `학교 <small class="cur-time">· ${x.note} ${short(x.em)}</small>` : x.name;
+      return `<li class="${cls}"><span class="t">${short(x.sm)}–${short(x.em)}</span><span>${name}${x.est ? '<span class="est">추정</span>' : ""}</span></li>`;
+    }).join("") : "";
+    return `<div class="col ${kid.id}"><h3>${kid.name} · ${DAY[selDay]}요일</h3>${list.length ? `<ol class="tl">${rows}</ol>` : `<div class="empty">일정 없음</div>`}</div>`;
+  }).join("");
+}
+
+// ───────── 렌더: 주간표 ─────────
+function renderWeek(d){
+  const order = [1,2,3,4,5,6,0], today = d.getDay();
+  let h = `<table><thead><tr><th></th>${order.map(i => `<th class="${i===today?"today-col":""}">${DAY[i]}</th>`).join("")}</tr></thead><tbody>`;
+  for (const kid of KIDS){
+    h += `<tr class="${kid.id}"><td class="kid-cell">${kid.name}</td>${order.map(i => `<td>${itemsFor(kid,i).map(x =>
+      `<span class="it">${x.type==="school" ? x.note : x.name}<small>${x.type==="school" ? short(x.em) : short(x.sm)+"–"+short(x.em)}</small></span>`).join("")}</td>`).join("")}</tr>`;
+  }
+  document.getElementById("week").innerHTML = h + "</tbody></table>";
+}
+
+// ───────── 알림 ─────────
+const settings = Object.assign({ on:false, lead:10, ju:true, se:true, sound:true }, store.get("sched-settings", {}));
+let fired = store.get("sched-fired", {});
+function saveSettings(){ store.set("sched-settings", settings); }
+
+function syncAlertUI(){
+  const btn = document.getElementById("alert-btn");
+  btn.textContent = settings.on ? "알림 끄기" : "알림 켜기";
+  document.getElementById("lead").value = String(settings.lead);
+  document.getElementById("n-ju").checked = settings.ju;
+  document.getElementById("n-se").checked = settings.se;
+  document.getElementById("n-sound").checked = settings.sound;
+  const perm = ("Notification" in window) ? Notification.permission : "none";
+  const hint = document.getElementById("alert-hint");
+  let t = "일정 시작 전과 시작할 때, 하교할 때 알려 줍니다. 이 화면이 열려 있어야 알림이 옵니다.";
+  if (settings.on && perm !== "granted") t += " 휴대폰 알림 권한이 없어 화면 안 알림과 소리로만 알려 줍니다.";
+  hint.textContent = t;
+}
+
+let audioCtx;
+function chime(){
+  if (!settings.sound) return;
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1175].forEach((f, i) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = f; o.type = "sine";
+      const t0 = audioCtx.currentTime + i*0.22;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.25, t0+0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0+0.5);
+      o.connect(g).connect(audioCtx.destination); o.start(t0); o.stop(t0+0.55);
+    });
+  }catch(e){}
+}
+let toastTimer;
+function notify(title, body){
+  const el = document.getElementById("toast");
+  el.textContent = `${title} — ${body}`; el.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.hidden = true, 12000);
+  chime();
+  try{ if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body, tag: title+body }); }catch(e){}
+  try{ navigator.vibrate && navigator.vibrate([200,100,200]); }catch(e){}
+}
+
+function checkAlerts(d){
+  if (!settings.on) return;
+  const dkey = d.toDateString(), now = d.getHours()*60 + d.getMinutes();
+  if (fired._d !== dkey) fired = { _d: dkey };
+  for (const kid of KIDS){
+    if (!settings[kid.id]) continue;
+    for (const x of itemsFor(kid, d.getDay())){
+      const events = [];
+      if (x.type === "school") events.push({ at: x.em, k: "out", title: `${kid.name} 하교`, body: `${x.note} ${fmt(x.em)}` });
+      else {
+        events.push({ at: x.sm - settings.lead, k: "pre", title: `${kid.name} · ${x.name} ${settings.lead}분 전`, body: `${fmt(x.sm)} 시작` });
+        events.push({ at: x.sm, k: "start", title: `${kid.name} · ${x.name} 시작`, body: `${fmt(x.sm)} – ${fmt(x.em)}` });
+      }
+      for (const ev of events){
+        const key = `${kid.id}|${x.s}|${ev.k}`;
+        // 정시 ~ 2분 안에만 울림 (화면을 늦게 열었을 때 지난 알림이 몰려 오지 않게)
+        if (!fired[key] && now >= ev.at && now - ev.at <= 2){ fired[key] = 1; notify(ev.title, ev.body); }
+      }
+    }
+  }
+  store.set("sched-fired", fired);
+}
+
+document.getElementById("alert-btn").addEventListener("click", async () => {
+  settings.on = !settings.on;
+  if (settings.on){
+    try{ if ("Notification" in window && Notification.permission === "default") await Notification.requestPermission(); }catch(e){}
+    try{ audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); }catch(e){}
+  }
+  saveSettings(); syncAlertUI();
+});
+document.getElementById("lead").addEventListener("change", e => { settings.lead = +e.target.value; saveSettings(); });
+["ju","se","sound"].forEach(k => document.getElementById("n-"+k).addEventListener("change", e => { settings[k] = e.target.checked; saveSettings(); }));
+document.getElementById("test-btn").addEventListener("click", () => notify("알림 테스트", "이렇게 알려 드려요"));
+
+// ───────── 탭 / 요일 ─────────
+function setTab(week){
+  document.getElementById("tab-day").setAttribute("aria-selected", !week);
+  document.getElementById("tab-week").setAttribute("aria-selected", week);
+  document.getElementById("view-day").hidden = week;
+  document.getElementById("view-week").hidden = !week;
+  store.set("sched-tab", week);
+}
+document.getElementById("tab-day").addEventListener("click", () => setTab(false));
+document.getElementById("tab-week").addEventListener("click", () => setTab(true));
+document.getElementById("days").addEventListener("click", e => {
+  const b = e.target.closest("[data-d]"); if (!b) return;
+  selDay = +b.dataset.d; tick(true);
+});
+setTab(store.get("sched-tab", false));
+
+// ───────── 루프 ─────────
+let lastMin = -1, lastDow = new Date().getDay();
+function tick(force){
+  const d = new Date();
+  document.getElementById("clock").textContent = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  document.getElementById("date").textContent = `${d.getMonth()+1}월 ${d.getDate()}일 ${DAY[d.getDay()]}요일`;
+  const m = d.getHours()*60 + d.getMinutes();
+  if (d.getDay() !== lastDow){ selDay = d.getDay(); lastDow = selDay; }
+  if (force || m !== lastMin){
+    lastMin = m;
+    renderNow(d); renderDays(d); renderCols(d); renderWeek(d); checkAlerts(d);
+  }
+}
+syncAlertUI(); tick(true);
+setInterval(tick, 5000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(true); });
+</script>
